@@ -16,7 +16,8 @@
 
 # Other useful tools
 
-- ### [CVSS v3.1 Base Score Calculator](https://cvss.js.org/)
+- ### [CVSS v4.0 Calculator](https://www.first.org/cvss/calculator/4.0)
+- ### [XSS Payload Generator](https://xssnow.in/xss-payload-generator.html)
 - ### [Security Headers](https://securityheaders.com/)
 - ### [Subdomain Finder](https://subdomainfinder.c99.nl/)
 - ### [CyberChef](https://gchq.github.io/CyberChef/)
