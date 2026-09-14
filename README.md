@@ -16,6 +16,7 @@
 
 # Other useful tools
 
+- ### [dnsrecon](https://www.dnsrecon.io/)
 - ### [CVSS v4.0 Calculator](https://www.first.org/cvss/calculator/4.0)
 - ### [XSS Payload Generator](https://xssnow.in/xss-payload-generator.html)
 - ### [Security Headers](https://securityheaders.com/)
