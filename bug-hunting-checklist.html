@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bug Bounty Checklist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#e7e9ec; --paper-2:#dfe2e6; --card:#fbfbfa;
+  --ink:#1b2330; --ink-soft:#4b5567; --line:#c7cbd1;
+  --red:#b0392f; --red-soft:#f4dcd9;
+  --teal:#1b6e66; --teal-soft:#d9ece9;
+  --amber:#a5710f; --amber-soft:#f2e3c8;
+  --slate:#41506b; --slate-soft:#dde2ea;
+  --grey:#5a6270; --grey-soft:#e4e5e8;
+  font-family:'Courier Prime','Courier New',ui-monospace,monospace;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);}
+body{
+  min-height:100vh;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(27,35,48,.06) 1px, transparent 0);
+  background-size:22px 22px;
+}
+h1,h2,h3{font-family:'Bebas Neue','Arial Narrow',sans-serif; margin:0; letter-spacing:.03em; text-transform:uppercase; font-weight:400;}
+::selection{background:var(--red); color:#fff;}
+button, input{font-family:inherit;}
+a{color:var(--slate);}
+
+/* ---------- shell ---------- */
+.shell{max-width:1240px; margin:0 auto; padding:26px 22px 80px;}
+
+.masthead{
+  background:var(--card); border:1px solid var(--line); border-radius:4px;
+  padding:22px 26px; margin-bottom:18px;
+  box-shadow:0 1px 0 rgba(27,35,48,.05);
+  position:relative; overflow:hidden;
+}
+.masthead::before{
+  content:"CASE FILE"; position:absolute; top:14px; right:-38px;
+  transform:rotate(35deg); background:var(--red); color:#fff;
+  font-size:11px; font-weight:700; letter-spacing:.14em;
+  padding:3px 46px; box-shadow:0 1px 3px rgba(0,0,0,.25);
+}
+.masthead .eyebrow{font-size:12px; color:var(--ink-soft); letter-spacing:.04em;}
+.masthead h1{font-size:42px; font-weight:400; margin:4px 0 6px; color:var(--ink); letter-spacing:.04em;}
+.masthead p{margin:0; color:var(--ink-soft); font-size:13.5px; max-width:64ch; line-height:1.55;}
+
+.stat-row{display:flex; gap:18px; margin-top:18px; flex-wrap:wrap; align-items:flex-end;}
+.stat{min-width:120px;}
+.stat .num{font-family:'Bebas Neue','Arial Narrow',sans-serif; font-size:34px; font-weight:400; line-height:1; letter-spacing:.02em;}
+.stat .lbl{font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft); margin-top:3px;}
+.progress-outer{flex:1; min-width:200px;}
+.progress-track{height:10px; background:var(--paper-2); border:1px solid var(--line); border-radius:99px; overflow:hidden;}
+.progress-fill{height:100%; background:linear-gradient(90deg, var(--teal), #2c8a7f); width:0%; transition:width .4s ease;}
+.progress-outer .lbl{font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft); margin-bottom:5px;}
+
+.toolbar{display:flex; gap:8px; flex-wrap:wrap; margin-top:16px;}
+.toolbar input[type=search]{
+  flex:1; min-width:180px; padding:9px 12px; border:1px solid var(--line); border-radius:3px;
+  background:var(--paper-2); font-size:13px; color:var(--ink);
+}
+.toolbar input[type=search]:focus{outline:2px solid var(--slate); outline-offset:1px;}
+.btn{
+  padding:9px 13px; border:1px solid var(--ink); background:var(--ink); color:var(--card);
+  border-radius:3px; font-size:12px; cursor:pointer; letter-spacing:.02em;
+}
+.btn.ghost{background:transparent; color:var(--ink); border-color:var(--line);}
+.btn.ghost:hover{border-color:var(--ink);}
+.btn:hover{opacity:.85;}
+.btn.danger{border-color:var(--red); color:var(--red); background:transparent;}
+.btn.danger:hover{background:var(--red-soft);}
+
+/* ---------- layout ---------- */
+.layout{display:grid; grid-template-columns:260px 1fr; gap:18px; margin-top:18px; align-items:start;}
+
+.nav{
+  background:var(--card); border:1px solid var(--line); border-radius:4px; padding:10px;
+  position:sticky; top:14px; max-height:calc(100vh - 28px); overflow-y:auto;
+}
+.nav-item{
+  display:flex; align-items:center; gap:10px; padding:9px 8px; border-radius:3px; cursor:pointer;
+  border-left:3px solid transparent; margin-bottom:2px;
+}
+.nav-item:hover{background:var(--paper-2);}
+.nav-item.active{background:var(--slate-soft); border-left-color:var(--slate);}
+.nav-num{font-size:11px; font-weight:700; color:var(--ink-soft); min-width:20px;}
+.nav-item.active .nav-num{color:var(--slate);}
+.nav-title{font-size:12px; line-height:1.3; flex:1; color:var(--ink);}
+.nav-pct{font-size:10.5px; color:var(--ink-soft); font-weight:600; white-space:nowrap;}
+.nav-ring{width:16px; height:16px; border-radius:50%; border:2px solid var(--line); flex-shrink:0;}
+.nav-ring.done{border-color:var(--teal); background:var(--teal-soft);}
+.nav-ring.partial{border-color:var(--amber);}
+
+/* ---------- responsive: layout collapses, sidebar becomes a horizontal chip strip ---------- */
+@media (max-width:880px){
+  .layout{grid-template-columns:1fr; gap:12px;}
+  .nav{
+    position:static; max-height:none; overflow-x:auto; overflow-y:hidden;
+    display:flex; gap:6px; padding:8px;
+    -webkit-overflow-scrolling:touch; scrollbar-width:thin;
+  }
+  .nav-item{
+    flex:0 0 auto; min-width:150px; margin-bottom:0;
+    border-left:none; border-bottom:3px solid transparent; border-radius:3px 3px 0 0;
+  }
+  .nav-item.active{border-left:none; border-bottom-color:var(--slate);}
+  .nav-title{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+}
+
+.main{display:flex; flex-direction:column; gap:14px;}
+
+.phase{
+  background:var(--card); border:1px solid var(--line); border-radius:4px; overflow:hidden; scroll-margin-top:14px;
+}
+.phase-head{
+  padding:16px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; gap:14px; align-items:flex-start;
+  background:linear-gradient(180deg, rgba(27,35,48,.02), transparent);
+}
+.phase-head .htext{min-width:0;}
+.phase-head .htext .no{font-size:11px; color:var(--ink-soft); letter-spacing:.1em;}
+.phase-head h2{font-size:23px; margin-top:2px;}
+.phase-head .desc{font-size:12px; color:var(--ink-soft); margin-top:4px; max-width:60ch; line-height:1.5; font-family:'Courier Prime','Courier New',monospace; font-style:italic;}
+.phase-badge{font-size:11px; font-weight:700; color:var(--ink-soft); white-space:nowrap; padding-top:2px;}
+
+.items{list-style:none; margin:0; padding:6px 8px;}
+.item{
+  display:flex; gap:12px; align-items:flex-start; padding:10px 12px; border-radius:3px;
+}
+.item:hover{background:var(--paper-2);}
+.item.hidden{display:none;}
+.chk{
+  width:18px; height:18px; margin-top:1px; flex-shrink:0; cursor:pointer;
+  accent-color:var(--teal);
+}
+.item-text{font-size:13px; line-height:1.5; color:var(--ink); flex:1; min-width:0;}
+.item.checked .item-text{color:var(--ink-soft); text-decoration:line-through; text-decoration-color:var(--line);}
+
+.sources{
+  background:var(--card); border:1px solid var(--line); border-radius:4px; padding:18px 22px; margin-top:18px; font-size:12.5px; color:var(--ink-soft); line-height:1.7;
+}
+.sources h3{font-size:14px; color:var(--ink); margin-bottom:8px;}
+.sources ul{margin:0; padding-left:18px;}
+.sources a{text-decoration:none; border-bottom:1px dotted var(--line);}
+
+.empty-state{padding:40px 20px; text-align:center; color:var(--ink-soft); font-size:13px;}
+
+footer{text-align:center; font-size:11px; color:var(--ink-soft); margin-top:26px;}
+
+@media print{
+  body{background:#fff;}
+  .nav, .toolbar, .btn, .masthead::before{display:none !important;}
+  .layout{grid-template-columns:1fr;}
+  .phase{break-inside:avoid; border:1px solid #999;}
+}
+
+/* ---------- responsive: small screens ---------- */
+@media (max-width:600px){
+  .shell{padding:14px 10px 60px;}
+
+  .masthead{padding:16px 14px;}
+  .masthead h1{font-size:30px;}
+  .masthead p{font-size:12.5px;}
+  .masthead::before{font-size:9px; padding:2px 40px; top:10px; right:-42px;}
+
+  .stat-row{gap:10px 14px;}
+  .stat{min-width:calc(50% - 7px);}
+  .progress-outer{min-width:100%; order:99;}
+
+  .toolbar{gap:6px;}
+  .toolbar input[type=search]{min-width:100%;}
+  .btn{flex:1 1 auto; text-align:center; font-size:11px; padding:9px 8px;}
+
+  .phase-head{flex-direction:column; padding:14px 14px; gap:6px;}
+  .phase-head h2{font-size:20px;}
+  .phase-badge{align-self:flex-start;}
+
+  .items{padding:4px;}
+  .item{padding:10px 8px; gap:10px; flex-wrap:wrap;}
+  .item-text{font-size:12.5px; min-width:0;}
+  .chk{width:19px; height:19px;}
+
+  .sources{padding:14px 16px;}
+}
+
+@media (max-width:380px){
+  .stat{min-width:100%;}
+  .masthead::before{display:none;}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="masthead">
+    <h1>Bug Bounty Hunting Checklist</h1>
+    <p>Daftar checklist berurutan dari tahap persiapan sampai pelaporan. Centang tiap temuan yang sudah diuji — progres tersimpan otomatis di browser (localStorage), tidak dikirim ke mana pun.</p>
+    <div class="stat-row">
+      <div class="stat"><div class="num" id="statDone">0</div><div class="lbl">Item Selesai</div></div>
+      <div class="stat"><div class="num" id="statTotal">0</div><div class="lbl">Total Item</div></div>
+      <div class="stat"><div class="num" id="statPhase">0/0</div><div class="lbl">Fase Selesai</div></div>
+      <div class="progress-outer">
+        <div class="lbl">Progres Keseluruhan — <span id="progressPct">0%</span></div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      </div>
+    </div>
+    <div class="toolbar">
+      <input type="search" id="search" placeholder="Cari item, mis. 'SSRF', 'JWT', 'IDOR'…">
+      <button class="btn ghost" id="btnExport">↓ Export progres (.json)</button>
+      <button class="btn ghost" id="btnImportTrigger">↑ Import progres</button>
+      <input type="file" id="btnImport" accept="application/json" style="display:none">
+      <button class="btn ghost" id="btnPrint">🖶 Cetak / PDF</button>
+      <button class="btn danger" id="btnReset">Reset semua</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <nav class="nav" id="nav"></nav>
+    <div class="main" id="main"></div>
+  </div>
+
+  <div class="sources">
+    <h3>Sumber metodologi</h3>
+    <ul>
+      <li><a href="https://owasp.org/www-project-web-security-testing-guide/" target="_blank" rel="noopener">OWASP Web Security Testing Guide (WSTG)</a> — kerangka fase pengujian: information gathering, config, auth, session, input validation, business logic.</li>
+      <li><a href="https://owasp.org/Top10/" target="_blank" rel="noopener">OWASP Top 10</a> — kategori risiko aplikasi web paling umum.</li>
+      <li><a href="https://owasp.org/API-Security/editions/2023/en/0x11-t10/" target="_blank" rel="noopener">OWASP API Security Top 10 (2023)</a> — BOLA, broken auth, BOPLA, resource consumption, SSRF pada API, dsb.</li>
+      <li><a href="https://portswigger.net/web-security" target="_blank" rel="noopener">PortSwigger Web Security Academy</a> — urutan lab server-side → client-side, termasuk access control, cache, request smuggling.</li>
+      <li>Jason Haddix — <em>The Bug Hunter's Methodology (TBHM)</em>, talk recon &amp; application analysis (DEF CON / Red Team Village).</li>
+      <li><a href="https://www.hackerone.com/hacker101" target="_blank" rel="noopener">HackerOne — Hacker101</a> — silabus dasar web hacking untuk pemula bug bounty.</li>
+    </ul>
+  </div>
+
+  <footer>Checklist statis — semua data tersimpan lokal di localstorage. Selalu uji hanya pada aset yang eksplisit in-scope pada program bug bounty.</footer>
+</div>
+
+<script>
+// ---------------- DATA ----------------
+// Setiap fase: { title, desc, items:[ text, text, ... ] }
+const PHASES = [
+{title:"Persiapan & Scoping", desc:"Sebelum menyentuh satu request pun — pahami aturan main.", items:[
+  "Baca kebijakan program secara penuh: in-scope, out-of-scope, aset yang boleh diuji",
+  "Cek tabel reward & klasifikasi severity (CVSS/skala internal program)",
+  "Siapkan akun uji coba terpisah — jangan pakai akun pribadi atau data pengguna asli",
+  "Konfigurasi proxy intersepsi (Burp Suite/Caido) & install ekstensi pendukung",
+  "Catat semua aset yang diizinkan: domain, subdomain, mobile app, API",
+  "Pastikan jenis program: VDP vs paid bounty, dan aturan disclosure",
+  "Siapkan template laporan: steps to reproduce, impact, PoC, saran remediasi",
+  "Tinjau laporan publik/disclosed report program sejenis untuk pola bug umum",
+]},
+{title:"Reconnaissance & OSINT", desc:"Petakan permukaan serangan sebelum menguji satu fitur pun.", items:[
+  "Enumerasi subdomain pasif (crt.sh, Certificate Transparency, subfinder)",
+  "Enumerasi subdomain aktif (bruteforce & permutation wordlist)",
+  "Port & service scanning pada aset in-scope",
+  "Fingerprint teknologi: framework, CMS, versi server, favicon hash",
+  "Google dorking & pencarian di search engine untuk data bocor",
+  "Telusuri Wayback Machine / historical URL untuk endpoint lama",
+  "Crawling & spidering aplikasi (manual + automated)",
+  "Review robots.txt dan sitemap.xml untuk path tersembunyi",
+  "Misconfigured .git exposed",
+  ".env file accessible",
+  "Backup file accessible (.bak, .old, .zip, .swp)",
+  "Telusuri file JavaScript untuk temukan endpoint API tersembunyi",
+  "Leaked credentials di JavaScript sisi klien",
+  "Leaked API keys di dalam mobile app / source code",
+  "Cek kemungkinan subdomain takeover pada CNAME menggantung",
+  "Review dokumentasi publik (Swagger/OpenAPI, Postman collection)",
+  "Identifikasi seluruh role & level akses pengguna yang ada",
+  "Petakan integrasi pihak ketiga & domain terkait",
+  "Enumerasi endpoint API (REST, GraphQL, gRPC)",
+  "Fuzzing parameter untuk menemukan info/endpoint debug tersembunyi",
+]},
+{title:"Konfigurasi Server & Deployment", desc:"Kesalahan setup infrastruktur yang sering luput dari review kode.", items:[
+  "Verifikasi metode HTTP yang diizinkan (uji PUT, DELETE, TRACE, OPTIONS)",
+  "Test security header: CSP, HSTS, X-Frame-Options, X-Content-Type-Options",
+  "Validasi konfigurasi HTTPS/TLS & rantai sertifikat",
+  "Host header injection",
+  "Cache poisoning via Host header",
+  "Cache deception via manipulasi ekstensi file",
+  "Unrestricted admin panel access",
+  "Abuse of debug endpoints",
+  "Default credentials masih aktif",
+  "Database terbuka ke publik (MongoDB, Redis, Elasticsearch)",
+  "Server membocorkan stack trace / debugging info pada error message",
+  "Leak IP internal pada pesan error",
+  "Missing access control pada dokumen/direktori internal",
+  "HTTP parameter pollution",
+]},
+{title:"Autentikasi", desc:"Pintu masuk sistem — celah di sini berdampak ke semua fitur di baliknya.", items:[
+  "Broken authentication bypass (logic flaw pada alur login)",
+  "Insecure password reset token (predictable, reusable, tidak expire)",
+  "Missing rate limit pada endpoint login",
+  "Tidak ada lockout setelah percobaan login gagal berulang",
+  "Lack of brute-force protection pada endpoint sensitif (OTP, reset password)",
+  "Credential stuffing pada endpoint yang terlupakan (legacy login)",
+  "Weak password policy",
+  "Tidak ada MFA yang diwajibkan untuk akun admin",
+  "Tidak ada reCAPTCHA/anti-automation pada registrasi",
+  "Bypass verifikasi email",
+  "Authentication bypass dengan null byte",
+  "Bypass filter validasi menggunakan trik Unicode",
+  "Rate-limit bypass menggunakan header X-Forwarded-For",
+  "Bypass pemblokiran IP menggunakan alamat IPv6",
+]},
+{title:"Manajemen Sesi", desc:"Setelah login — bagaimana identitas pengguna dijaga sepanjang sesi.", items:[
+  "Improper cookie flags (kurang HttpOnly / Secure / SameSite)",
+  "Session fixation",
+  "Broken session invalidation setelah logout",
+  "Unsafe redirect pada alur logout",
+  "Unsafe redirect setelah login",
+  "JWT dengan masa berlaku (expiration) yang terlalu panjang",
+  "Token bocor lewat variabel JavaScript sisi klien",
+  "WebSocket terbuka tanpa autentikasi",
+]},
+{title:"Otorisasi & Access Control (IDOR)", desc:"Siapa boleh mengakses/mengubah data siapa — sumber bug bounty paling produktif.", items:[
+  "IDOR pada update profil pengguna",
+  "IDOR via enumerasi alamat email",
+  "IDOR pada API subscription/langganan",
+  "Broken Object Level Authorization (BOLA) pada API",
+  "API mengizinkan penghapusan user milik pengguna lain",
+  "Mass assignment pada REST API (field yang tak seharusnya bisa diubah)",
+  "Fungsi admin tersembunyi tapi masih dapat diakses lewat frontend",
+  "Horizontal privilege escalation antar akun sejajar",
+  "Vertical privilege escalation menuju role admin",
+  "Flawed invite/token logic (token undangan bisa dipakai ulang/ditebak)",
+]},
+{title:"Injeksi (XSS, SQLi, Command, dll.)", desc:"Data yang tidak divalidasi/diescape mengalir ke tempat yang salah.", items:[
+  "Reflected XSS pada kolom pencarian",
+  "Stored XSS pada fitur komentar",
+  "DOM-based XSS pada halaman JS-heavy",
+  "XSS via upload file SVG",
+  "XSS via payload JSON yang cacat/tidak wajar",
+  "HTML injection pada email notifikasi",
+  "SQL injection pada parameter yang jarang diuji",
+  "NoSQL injection",
+  "Command injection via nama file",
+  "Unsafe deserialization (PHP object injection, Java gadget chain)",
+  "CRLF injection untuk menyisipkan header HTTP",
+  "Null byte injection pada path file",
+  "Server-Side Template Injection (SSTI)",
+  "XXE injection saat parsing XML",
+]},
+{title:"Server-Side Request Forgery (SSRF)", desc:"Memaksa server target melakukan request ke tujuan pilihan penyerang.", items:[
+  "SSRF pada fitur PDF generator",
+  "SSRF via fitur webhook",
+  "Blind SSRF via fitur image fetcher/proxy gambar",
+  "SSRF menggunakan teknik DNS rebinding",
+  "SSRF menuju Cloud metadata endpoint (169.254.169.254)",
+  "Abuse fitur server-side PDF export untuk baca file internal",
+]},
+{title:"File Handling & Path Traversal", desc:"Upload dan akses file — jalur klasik menuju RCE atau kebocoran data.", items:[
+  "Unsafe file upload tanpa pengecekan content-type",
+  "MIME type confusion pada file yang diunggah",
+  "Upload polyglot file (valid di dua format sekaligus)",
+  "Directory traversal pada file viewer",
+  "File inclusion via file yang diunggah lalu diakses langsung (LFI/RFI)",
+  "Insecure image proxy (bisa dipakai baca resource lain)",
+]},
+{title:"API & GraphQL", desc:"Dipetakan langsung ke OWASP API Security Top 10 (2023).", items:[
+  "API1: Broken Object Level Authorization",
+  "API2: Broken Authentication pada endpoint API",
+  "API3: Broken Object Property Level Authorization / excessive data exposure",
+  "API4: Unrestricted Resource Consumption (tidak ada limit request/ukuran)",
+  "API5: Broken Function Level Authorization",
+  "API6: Unrestricted Access to Sensitive Business Flows",
+  "API7: Server-Side Request Forgery pada endpoint API",
+  "API8: Security Misconfiguration pada API",
+  "API9: Improper Inventory Management (shadow/legacy API version)",
+  "API10: Unsafe Consumption of third-party APIs",
+  "GraphQL introspection masih aktif di production",
+  "GraphQL injection",
+  "Rate limit tidak ada pada endpoint GraphQL",
+  "API key dipakai ulang lintas environment (dev/staging/prod)",
+]},
+{title:"OAuth, SSO, JWT & CSRF", desc:"Alur delegasi identitas antar sistem — kompleks dan rawan salah konfigurasi.", items:[
+  "OAuth misconfiguration menyebabkan open redirect",
+  "OAuth authorization code/token bocor lewat header Referer",
+  "OAuth scope escalation (mendapat izin lebih dari yang diberikan)",
+  "SAML signature bypass",
+  "JWT dengan algoritma 'none' diterima server",
+  "JWT ditandatangani dengan secret lemah (brute-force HS256)",
+  "CSRF pada update profil",
+  "CSRF pada penghapusan akun",
+  "Open redirect via parameter query",
+  "Open redirect dengan trik encoding base64",
+]},
+{title:"CORS, CSP & Header Config", desc:"Kebijakan browser yang salah setel membuka pintu ke domain lain.", items:[
+  "CORS misconfiguration: wildcard origin dengan credentials diizinkan",
+  "Overly permissive CORS policy (reflect origin apa pun)",
+  "Content-Security-Policy salah konfigurasi atau terlalu longgar",
+  "Clickjacking (tidak ada X-Frame-Options/frame-ancestors)",
+  "Email spoofing via contact form (SPF/DKIM/DMARC lemah)",
+]},
+{title:"Business Logic & Race Condition", desc:"Bug yang tidak muncul di scanner — butuh pemahaman alur bisnis aplikasi.", items:[
+  "Logic flaw pada shopping cart (diskon/kuantitas ganda)",
+  "Price manipulation via hidden input/parameter harga",
+  "Coupon abuse (reuse kode, stacking tak wajar)",
+  "Duplicate purchase / duplikasi saldo via race condition",
+  "Replay attack pada endpoint pembayaran",
+  "Bypass paywall memanfaatkan caching",
+  "Business logic flaw pada proses refund",
+  "Mobile app menyimpan secret/API key secara hardcoded",
+  "Kebocoran info sensitif lewat script analytics/tracking",
+]},
+{title:"Pelaporan & Wrap-up", desc:"Bug bagus dengan laporan buruk sering ditolak triage — jangan sampai kerja kerasmu sia-sia.", items:[
+  "Susun PoC yang jelas: screenshot, video, request/response mentah",
+  "Tulis steps to reproduce yang bisa direplikasi tim lain tanpa tebak-tebak",
+  "Jelaskan business impact, bukan cuma technical impact",
+  "Cek dulu kemungkinan laporan duplikat sebelum submit",
+  "Sertakan estimasi severity/CVSS jika program memintanya",
+  "Submit sesuai template program & pantau proses triase",
+]},
+];
+
+// ---------------- STATE ----------------
+const STORAGE_KEY = "bbcl_progress_v1";
+let checked = {};
+try{ checked = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }catch(e){ checked = {}; }
+
+function itemId(pi, ii){ return "p"+pi+"-i"+ii; }
+
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(checked));
+  render(false);
+}
+
+// ---------------- RENDER ----------------
+const navEl = document.getElementById("nav");
+const mainEl = document.getElementById("main");
+
+function phaseStats(pi){
+  const items = PHASES[pi].items;
+  let done = 0;
+  items.forEach((_, ii) => { if(checked[itemId(pi, ii)]) done++; });
+  return {done, total: items.length};
+}
+
+function buildStatic(){
+  PHASES.forEach((phase, pi) => {
+    // nav item
+    const nav = document.createElement("div");
+    nav.className = "nav-item";
+    nav.dataset.phase = pi;
+    nav.innerHTML = `<span class="nav-num">${String(pi+1).padStart(2,"0")}</span>
+      <span class="nav-ring" data-ring="${pi}"></span>
+      <span class="nav-title">${phase.title}</span>
+      <span class="nav-pct" data-pct="${pi}"></span>`;
+    nav.addEventListener("click", () => {
+      document.getElementById("phase-"+pi).scrollIntoView({behavior:"smooth", block:"start"});
+    });
+    navEl.appendChild(nav);
+
+    // phase section
+    const sec = document.createElement("section");
+    sec.className = "phase";
+    sec.id = "phase-"+pi;
+    const head = document.createElement("div");
+    head.className = "phase-head";
+    head.innerHTML = `<div class="htext">
+        <div class="no">FASE ${String(pi+1).padStart(2,"0")} / ${String(PHASES.length).padStart(2,"0")}</div>
+        <h2>${phase.title}</h2>
+        <div class="desc">${phase.desc}</div>
+      </div>
+      <div class="phase-badge" data-badge="${pi}"></div>`;
+    sec.appendChild(head);
+
+    const ul = document.createElement("ul");
+    ul.className = "items";
+    phase.items.forEach((text, ii) => {
+      const li = document.createElement("li");
+      li.className = "item";
+      li.dataset.text = text.toLowerCase();
+      const id = itemId(pi, ii);
+      li.innerHTML = `<input type="checkbox" class="chk" id="${id}">
+        <span class="item-text">${text}</span>`;
+      li.querySelector(".chk").addEventListener("change", (e) => {
+        checked[id] = e.target.checked;
+        save();
+      });
+      ul.appendChild(li);
+    });
+    sec.appendChild(ul);
+    mainEl.appendChild(sec);
+  });
+}
+
+function render(updateChecks = true){
+  let totalDone = 0, totalItems = 0, phasesDone = 0;
+  PHASES.forEach((phase, pi) => {
+    const {done, total} = phaseStats(pi);
+    totalDone += done; totalItems += total;
+    if(done === total) phasesDone++;
+
+    const ring = navEl.querySelector(`[data-ring="${pi}"]`);
+    const pct = navEl.querySelector(`[data-pct="${pi}"]`);
+    const badge = mainEl.querySelector(`[data-badge="${pi}"]`);
+    const percentage = Math.round((done/total)*100);
+    if(pct) pct.textContent = percentage + "%";
+    if(badge) badge.textContent = done + " / " + total;
+    if(ring){
+      ring.classList.toggle("done", done === total);
+      ring.classList.toggle("partial", done > 0 && done < total);
+    }
+
+    if(updateChecks){
+      phase.items.forEach((_, ii) => {
+        const id = itemId(pi, ii);
+        const box = document.getElementById(id);
+        if(box){
+          const isChecked = !!checked[id];
+          box.checked = isChecked;
+          box.closest(".item").classList.toggle("checked", isChecked);
+        }
+      });
+    } else {
+      phase.items.forEach((_, ii) => {
+        const id = itemId(pi, ii);
+        const box = document.getElementById(id);
+        if(box) box.closest(".item").classList.toggle("checked", !!checked[id]);
+      });
+    }
+  });
+
+  document.getElementById("statDone").textContent = totalDone;
+  document.getElementById("statTotal").textContent = totalItems;
+  document.getElementById("statPhase").textContent = phasesDone + "/" + PHASES.length;
+  const overallPct = totalItems ? Math.round((totalDone/totalItems)*100) : 0;
+  document.getElementById("progressPct").textContent = overallPct + "%";
+  document.getElementById("progressFill").style.width = overallPct + "%";
+}
+
+buildStatic();
+render(true);
+
+// ---------------- SCROLLSPY ----------------
+const sections = Array.from(document.querySelectorAll(".phase"));
+const navItems = Array.from(document.querySelectorAll(".nav-item"));
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if(entry.isIntersecting){
+      const idx = sections.indexOf(entry.target);
+      navItems.forEach(n => n.classList.remove("active"));
+      if(navItems[idx]) navItems[idx].classList.add("active");
+    }
+  });
+}, {rootMargin: "-10% 0px -70% 0px"});
+sections.forEach(s => observer.observe(s));
+
+// ---------------- SEARCH ----------------
+document.getElementById("search").addEventListener("input", (e) => {
+  const q = e.target.value.trim().toLowerCase();
+  document.querySelectorAll(".item").forEach(li => {
+    li.classList.toggle("hidden", q && !li.dataset.text.includes(q));
+  });
+  document.querySelectorAll(".phase").forEach(sec => {
+    const visible = sec.querySelectorAll(".item:not(.hidden)").length;
+    sec.style.display = (q && visible === 0) ? "none" : "";
+  });
+});
+
+// ---------------- TOOLBAR ACTIONS ----------------
+document.getElementById("btnReset").addEventListener("click", () => {
+  if(confirm("Reset seluruh progres checklist? Tindakan ini tidak bisa dibatalkan.")){
+    checked = {};
+    save();
+  }
+});
+
+document.getElementById("btnExport").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify({exportedAt: new Date().toISOString(), checked}, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "bug-bounty-checklist-progress.json";
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById("btnImportTrigger").addEventListener("click", () => {
+  document.getElementById("btnImport").click();
+});
+document.getElementById("btnImport").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const data = JSON.parse(reader.result);
+      checked = data.checked || data;
+      save();
+      alert("Progres berhasil diimpor.");
+    }catch(err){
+      alert("File tidak valid.");
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = "";
+});
+
+document.getElementById("btnPrint").addEventListener("click", () => window.print());
+</script>
+</body>
+</html>
