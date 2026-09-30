@@ -1,5 +1,6 @@
 # List of tools
 
+- ### [Bug Hunting Checklist](bug-hunting-checklist)
 - ### [Crontab Editor](cron)
 - ### [Konverter Basis Bilangan](konverter-bilangan)
 - ### [URL Encoder - Decoder](url-encoder-decoder)
